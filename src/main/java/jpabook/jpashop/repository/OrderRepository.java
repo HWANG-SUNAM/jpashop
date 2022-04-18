@@ -1,6 +1,7 @@
 package jpabook.jpashop.repository;
 
 import jpabook.jpashop.domain.Order;
+import jpabook.jpashop.repository.order.simplequery.OrderSimpleQueryDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
@@ -101,5 +102,48 @@ public class OrderRepository {
         cq.where(cb.and(criteria.toArray(new Predicate[criteria.size()])));
         TypedQuery<Order> query = em.createQuery(cq).setMaxResults(1000);
         return query.getResultList();
+    }
+
+    public List<Order> findAllWithMemberDelivery() {
+        return em.createQuery(
+                "select o from Order o" +
+                        " join fetch o.member m" +
+                        " join fetch o.delivery d", Order.class
+        ).getResultList();
+    }
+
+    public List<OrderSimpleQueryDto> findOrderDtos() {
+        return em.createQuery(
+                "select new jpabook.jpashop.repository.order.simplequery.OrderSimpleQueryDto(o.id, m.name, o.orderDate, o.status, d.address)" +
+                        " from Order o" +
+                " join o.member m" +
+                " join o.delivery d", OrderSimpleQueryDto.class)
+                .getResultList();
+    }
+
+    public List<Order> findAllWithItem() {
+        // distinct : db의 distinct와 조금 다르다. db의 distinct 키워드 날려주고 + JPA에서 자체적으로 같은 id(여기선 orderId)값이 있으면 즉, 중복값을 버림
+        /**
+         * 제약 사항
+         * 1. 일대다(컬렉션 페치 조인)를 하는 순간 페이징 불가... 데이터 뻥튀기 때문인 이유도 있지만 setFirstResult(), setMaxResults()을 사용하면 메모리에서 페이징 처리하기 때문에 성능 이슈가 반드시 생긴다.
+         * 2. 컬렉션 페치 조인은 1개만 사용할 수 있다. 컬렉션 툴 이상에 페치 조인을 사용하면 안된다. 데이터가 부정합하게 조회될 수 있다.
+         */
+        return em.createQuery(
+                "select distinct o from Order o" +
+                " join fetch o.member m" +
+                " join fetch o.delivery d" +
+                " join fetch o.orderItems oi" +
+                " join fetch oi.item i", Order.class)
+                .getResultList();
+    }
+
+    public List<Order> findAllWithMemberDelivery(int offset, int limit) {
+        return em.createQuery(
+                "select o from Order o" +
+                        " join fetch o.member m" +
+                        " join fetch o.delivery d", Order.class)
+                .setFirstResult(offset)
+                .setMaxResults(limit)
+                .getResultList();
     }
 }

@@ -22,7 +22,7 @@ public class Order {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id")
-    private Member member;
+    private Member member; // = new ByteByddyInterceptor(); // lazy라서 프록시 객체가 들어감
 
     // cascade는 오직 하나의 엔티티에서 참조할 경우만 사용한다. 여기선 Order만이 orderItems, delivery을 참조
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
